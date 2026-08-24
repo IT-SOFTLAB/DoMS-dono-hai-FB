@@ -2,12 +2,12 @@
 
 The project has two sibling applications:
 
-- `doms/` – Spring Boot 3 / Java 21 backend
+- `doms/` – Spring Boot 3 / Java 17 backend
 - `frontend/` – React + Vite frontend
 
 ## Start
 
-1. Create a MySQL database named `doms` and set database credentials in `doms/src/main/resources/application.properties` (or environment overrides).
+1. Copy `doms/.env.example` to `doms/.env`, then configure PostgreSQL, JWT, and your Cloudinary cloud name, API key, and API secret.
 2. In `doms`, run `./mvnw spring-boot:run` (`mvnw.cmd spring-boot:run` on Windows).
 3. In `frontend`, run `npm install`, then `npm run dev`.
 
@@ -18,4 +18,6 @@ Demo accounts are created automatically:
 - Admin: `admin@gmail.com` / `Admin@123`
 - User: `user@gmail.com` / `User@123`
 
-Uploaded files are stored in `doms/uploads`; metadata, generated document numbers, users, quotas, and subscriptions are stored in MySQL.
+New files and document versions are stored as raw assets in Cloudinary under `doms/documents` (configurable with `CLOUDINARY_FOLDER`). Metadata, generated document numbers, users, and permissions are stored in PostgreSQL. The Cloudinary API secret is used only by the backend and must never be exposed through the frontend.
+
+Existing records that point to files in `doms/uploads` remain readable and are removed locally when permanently deleted. All new uploads use Cloudinary.

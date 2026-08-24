@@ -1,0 +1,5 @@
+import { CheckCircle2, LoaderCircle, X } from "lucide-react";
+export function ProgressBar({ value, max, label }) { const percent=max>0?Math.min(100,Math.max(0,value/max*100)):0; return <div className="progress-block" aria-label={label||`${Math.round(percent)}% used`}><div className="progress-track"><i style={{"--progress":`${percent}%`}}/></div>{label&&<small>{label}</small>}</div>; }
+export function Toast({ message, tone="success", onClose }) { if(!message)return null; return <div className={`toast ${tone}`} role="status"><CheckCircle2/><span>{message}</span><button type="button" aria-label="Dismiss notification" onClick={onClose}><X/></button></div>; }
+export function BusyButton({ busy, done, children, ...props }) { return <button {...props} disabled={busy||props.disabled}>{busy?<><LoaderCircle className="spin"/>Please wait…</>:done?<><CheckCircle2/>Saved</>:children}</button>; }
+export function SkeletonList({ rows=3 }) { return <div className="skeleton-list" aria-label="Loading">{Array.from({length:rows},(_,i)=><div className="skeleton-row" key={i}><i/><span><b/><b/></span></div>)}</div>; }

@@ -1,0 +1,9 @@
+import { useEffect, useState } from "react";
+import { api } from "../../api/client";
+
+export default function ShareDialog({ document, close }) {
+  const [query, setQuery] = useState(""); const [users, setUsers] = useState([]); const [selected, setSelected] = useState([]); const [message, setMessage] = useState("");
+  useEffect(() => { const timer = setTimeout(() => api(`/user/directory?query=${encodeURIComponent(query)}`).then(setUsers).catch((e) => setMessage(e.message)), 200); return () => clearTimeout(timer); }, [query]);
+  async function submit(event) { event.preventDefault(); try { await api(`/shares/documents/${document.id}`, { method: "POST", body: JSON.stringify({ userIds: selected }) }); setMessage("Document shared successfully"); setSelected([]); } catch (error) { setMessage(error.message); } }
+  return <div className="modal" onMouseDown={close}><div onMouseDown={(e) => e.stopPropagation()}><button className="close" onClick={close}>×</button><h3>Share document</h3><p className="form-intro">Select users who can view and download <b>{document.fileName}</b>. System administrators are excluded.</p><form className="form" onSubmit={submit}><label>Search users<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name or email"/></label><div className="share-users">{users.map((user) => <label key={user.id}><input type="checkbox" checked={selected.includes(user.id)} onChange={() => setSelected((ids) => ids.includes(user.id) ? ids.filter((id) => id !== user.id) : [...ids, user.id])}/><span><b>{user.fullName}</b><small>{user.email}</small></span></label>)}{!users.length&&<p className="empty-users">No users found.</p>}</div><button className="primary" disabled={!selected.length}>Share with {selected.length || 0} user{selected.length === 1 ? "" : "s"}</button>{message && <p className="notice">{message}</p>}</form></div></div>;
+}
