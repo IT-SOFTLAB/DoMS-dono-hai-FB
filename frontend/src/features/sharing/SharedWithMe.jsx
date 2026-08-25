@@ -18,7 +18,7 @@ export default function SharedWithMe() {
 
   async function file(id, disposition) {
     try {
-      const response = await fetch(`${API}/documents/${disposition}/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem("doms_token")}` } });
+      const response = await fetch(`${API}/documents/${disposition}/${id}`, { headers: { Authorization: `Bearer ${sessionStorage.getItem("doms_token")}` } });
       if (!response.ok) throw new Error("Access denied");
       const url = URL.createObjectURL(await response.blob());
       if (disposition === "view") window.open(url, "_blank", "noopener,noreferrer");

@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Eye, History, UploadCloud } from "lucide-react";
-import { api, API } from "../../api/client";
+import { Eye, History, LoaderCircle, UploadCloud } from "lucide-react";
+import { api, apiBlob } from "../../api/client";
 
 export function PreviewDialog({ document, close }) {
-  const [url,setUrl]=useState(""),[error,setError]=useState("");
-  useEffect(()=>{let objectUrl;fetch(`${API}/documents/view/${document.id}`,{headers:{Authorization:`Bearer ${localStorage.getItem("doms_token")}`}}).then(async response=>{if(!response.ok)throw new Error("Preview could not be loaded");objectUrl=URL.createObjectURL(await response.blob());setUrl(objectUrl);}).catch(e=>setError(e.message));return()=>objectUrl&&URL.revokeObjectURL(objectUrl);},[document.id]);
-  return <div className="modal preview-modal" onMouseDown={close}><div onMouseDown={e=>e.stopPropagation()}><button className="close" onClick={close}>×</button><h3><Eye/> Preview — {document.fileName}</h3>{error&&<div className="error">{error}</div>}{url&&(/^(PDF|PNG|JPG|JPEG|GIF|TXT)$/i.test(document.fileType)?<iframe title={document.fileName} src={url}/>:<div className="preview-fallback"><p>This file type is not rendered directly by your browser.</p><a className="primary" href={url} target="_blank" rel="noreferrer">Open file</a></div>)}</div></div>;
+  const [url,setUrl]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true);
+  useEffect(()=>{let objectUrl;setLoading(true);apiBlob(`/documents/view/${document.id}`).then(blob=>{objectUrl=URL.createObjectURL(blob);setUrl(objectUrl);}).catch(e=>setError(e.message)).finally(()=>setLoading(false));return()=>objectUrl&&URL.revokeObjectURL(objectUrl);},[document.id]);
+  const image=/^(PNG|JPG|JPEG|GIF|WEBP|BMP)$/i.test(document.fileType);
+  return <div className="modal preview-modal" onMouseDown={close}><div onMouseDown={e=>e.stopPropagation()}><button className="close" onClick={close}>×</button><h3><Eye/> Preview — {document.fileName}</h3>{loading&&<div className="preview-loading"><LoaderCircle className="spin"/> Loading preview…</div>}{error&&<div className="error">{error}</div>}{url&&(image?<div className="image-preview"><img src={url} alt={document.fileName}/></div>:/^(PDF|TXT)$/i.test(document.fileType)?<iframe title={document.fileName} src={url}/>:<div className="preview-fallback"><p>This file type is not rendered directly by your browser.</p><a className="primary" href={url} target="_blank" rel="noreferrer">Open file</a></div>)}</div></div>;
 }
 
 export function VersionsDialog({ document, close, changed }) {

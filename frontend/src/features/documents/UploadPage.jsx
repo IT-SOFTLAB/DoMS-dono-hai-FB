@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Copy, FileUp, ShieldCheck, Share2, X } from "lucide-react";
 import { api } from "../../api/client";
 import ShareDialog from "../sharing/ShareDialog";
@@ -29,6 +29,7 @@ export default function UploadPage({ profile, refresh }) {
   const [copied, setCopied] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [toast, setToast] = useState("");
+  const uploadInProgress = useRef(false);
   const [lookupForm, setLookupForm] = useState({ name: "", description: "" });
   const update = (field, value) => setMetadata((current) => ({ ...current, [field]: value }));
   const selectFile = (selected) => { if (!selected) return; setFile(selected); setResult(null); setError(""); setMetadata((current) => ({ ...current, fileName: selected.name, fileType: detectFileType(selected) })); };
@@ -46,6 +47,8 @@ export default function UploadPage({ profile, refresh }) {
 
   async function submit(event) {
     event.preventDefault();
+    if (uploadInProgress.current || !file) return;
+    uploadInProgress.current = true;
     setError(""); setSaving(true); setResult(null);
     const form = new FormData();
     form.append("file", file);
@@ -57,7 +60,7 @@ export default function UploadPage({ profile, refresh }) {
       setNote(""); setNoteSaved(false); setNoteOpen(true);
       await refresh();
     } catch (requestError) { setError(requestError.message); }
-    finally { setSaving(false); }
+    finally { uploadInProgress.current = false; setSaving(false); }
   }
 
   return <div className="upload-layout">

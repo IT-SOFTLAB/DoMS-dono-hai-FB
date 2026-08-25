@@ -29,7 +29,7 @@ import {
   Crown,
 } from "lucide-react";
 import "./styles.css";
-import { api, API } from "./api/client";
+import { api, API, clearSession, readSession, saveSession } from "./api/client";
 import DocumentUploadPage from "./features/documents/UploadPage";
 import DocumentSearchPage from "./features/documents/SearchPage";
 import LookupManagement from "./features/lookups/LookupManagement";
@@ -37,29 +37,33 @@ import SharedWithMe from "./features/sharing/SharedWithMe";
 import NotesPage from "./features/documents/NotesPage";
 import RecycleBin from "./features/documents/RecycleBin";
 import AuditPage from "./features/documents/AuditPage";
-import { ProgressBar, Toast } from "./features/ui/Feedback";
-const routeFor = (admin, page) => `/${admin ? "admin" : "user"}/${page}`;
+import { GlobalLoader, ProgressBar, Toast } from "./features/ui/Feedback";
+const routeFor = (admin, page) => `#/${admin ? "admin" : "user"}/${page}`;
 const pageFromRoute = (admin, items) => {
-  const [area, page] = window.location.pathname.split("/").filter(Boolean);
+  const source = window.location.hash.slice(1) || window.location.pathname;
+  const [area, page] = source.split("/").filter(Boolean);
   return area === (admin ? "admin" : "user") && items.some(([id]) => id === page) ? page : "dashboard";
 };
 function Login({ onLogin }) {
   const [e, setE] = useState(""),
     [p, setP] = useState(""),
     [err, setErr] = useState(""),
-    [forgot, setForgot] = useState(false);
+    [forgot, setForgot] = useState(false),
+    [busy, setBusy] = useState(false);
   async function submit(x) {
     x.preventDefault();
+    setBusy(true); setErr("");
     try {
       const r = await api("/auth/login", {
         method: "POST",
         body: JSON.stringify({ email: e, password: p }),
       });
-      localStorage.setItem("doms_token", r.token);
-      localStorage.setItem("doms_user", JSON.stringify(r));
+      saveSession(r);
       onLogin(r);
     } catch (z) {
       setErr(z.message);
+    } finally {
+      setBusy(false);
     }
   }
   return (
@@ -111,7 +115,7 @@ function Login({ onLogin }) {
           </label>
           <button type="button" className="forgot-link" onClick={() => setForgot(true)}>Forgot password?</button>
           {err && <div className="error">{err}</div>}
-          <button className="primary">Sign in</button>
+          <button className="primary" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
         </form>
       </section>
       {forgot && <Modal close={() => setForgot(false)}><PasswordOtpForm initialEmail={e} onDone={() => setForgot(false)} /></Modal>}
@@ -129,7 +133,7 @@ function Shell({ user, onLogout }) {
         ["dashboard", LayoutDashboard, "Dashboard"],
         ["upload", Upload, "Upload document"],
         ["search", Search, "Search documents"],
-        ["notes", StickyNote, "Document notes"],
+        // ["notes", StickyNote, "Document notes"],
         ["audit", Activity, "Audit trail"],
         ["recycle", ArchiveRestore, "Recycle bin"],
         ["categories", Tags, "Categories"],
@@ -145,16 +149,17 @@ function Shell({ user, onLogout }) {
   const navigate = (nextPage, replace = false) => {
     if (!items.some(([id]) => id === nextPage)) return;
     const path = routeFor(admin, nextPage);
-    if (window.location.pathname !== path) window.history[replace ? "replaceState" : "pushState"]({ page: nextPage }, "", path);
+    if (window.location.hash !== path) window.history[replace ? "replaceState" : "pushState"]({ page: nextPage }, "", path);
     setPage(nextPage);
     setOpen(false);
   };
   useEffect(() => {
     const expected = routeFor(admin, page);
-    if (window.location.pathname !== expected) window.history.replaceState({ page }, "", expected);
-    const onPopState = () => setPage(pageFromRoute(admin, items));
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+    if (window.location.hash !== expected) window.history.replaceState({ page }, "", expected);
+    const onRouteChange = () => setPage(pageFromRoute(admin, items));
+    window.addEventListener("popstate", onRouteChange);
+    window.addEventListener("hashchange", onRouteChange);
+    return () => { window.removeEventListener("popstate", onRouteChange); window.removeEventListener("hashchange", onRouteChange); };
   }, [admin]);
   return (
     <div className="app">
@@ -522,6 +527,7 @@ function UserPages({ page }) {
   return <Profile profile={profile} refresh={load} />;
 }
 function Dashboard({ profile, docs }) {
+  const recent = [...docs].sort((a,b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0)).slice(0, 5);
   return (
     <>
       <div className="welcome">
@@ -548,7 +554,9 @@ function Dashboard({ profile, docs }) {
           tone="green"
         />
       </div>
-      <Panel title="Workspace ready"><p className="form-intro">Your account has unlimited document uploads. Use Upload document to catalogue a new file or Search documents to browse your archive.</p></Panel>
+      <Panel title="Recent document uploads">
+        {recent.length ? <div className="recent-documents">{recent.map(doc => <article key={doc.id}><span className="file-icon">{doc.fileType}</span><div><b>{doc.fileName}</b><small>{doc.category || "Uncategorized"} · {doc.department || "No department"}</small></div><time>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : ""}</time></article>)}</div> : <p className="form-intro">No documents uploaded yet. Use Upload document to catalogue your first file.</p>}
+      </Panel>
     </>
   );
 }
@@ -815,7 +823,7 @@ function SearchPage() {
                 e.preventDefault();
                 fetch(`${API}/documents/download/${d.id}`, {
                   headers: {
-                    Authorization: `Bearer ${localStorage.getItem("doms_token")}`,
+                    Authorization: `Bearer ${sessionStorage.getItem("doms_token")}`,
                   },
                 })
                   .then((r) => r.blob())
@@ -1047,7 +1055,7 @@ function SearchPageV2() {
                   e.preventDefault();
                   fetch(`${API}/documents/download/${d.id}`, {
                     headers: {
-                      Authorization: `Bearer ${localStorage.getItem("doms_token")}`,
+                      Authorization: `Bearer ${sessionStorage.getItem("doms_token")}`,
                     },
                   })
                     .then((r) => r.blob())
@@ -1152,31 +1160,24 @@ function Modal({ close, children }) {
     </div>
   );
 }
-function readStoredUser() {
-  try {
-    const value = localStorage.getItem("doms_user");
-    if (!value) return null;
-    const user = JSON.parse(value);
-    return user && user.token && user.role ? user : null;
-  } catch {
-    localStorage.removeItem("doms_user");
-    localStorage.removeItem("doms_token");
-    return null;
-  }
-}
 export default function App() {
-  const [u, setU] = useState(readStoredUser);
-  return u ? (
+  const [u, setU] = useState(readSession);
+  useEffect(() => {
+    const unauthorized = () => setU(null);
+    window.addEventListener("doms:unauthorized", unauthorized);
+    return () => window.removeEventListener("doms:unauthorized", unauthorized);
+  }, []);
+  return <><GlobalLoader/>{u ? (
     <Shell
       user={u}
-      onLogout={() => {
-        localStorage.removeItem("doms_user");
-        localStorage.removeItem("doms_token");
-        window.history.replaceState({}, "", "/login");
+      onLogout={async () => {
+        try { await api("/auth/logout", { method: "POST" }); } catch { /* clear locally even if offline */ }
+        clearSession();
+        window.history.replaceState({}, "", "#/login");
         setU(null);
       }}
     />
   ) : (
     <Login onLogin={(user) => { window.history.replaceState({}, "", routeFor(user.role === "ROLE_ADMIN", "dashboard")); setU(user); }} />
-  );
+  )}</>;
 }

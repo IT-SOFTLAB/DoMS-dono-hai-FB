@@ -21,3 +21,5 @@ Demo accounts are created automatically:
 New files and document versions are stored as raw assets in Cloudinary under `doms/documents` (configurable with `CLOUDINARY_FOLDER`). Metadata, generated document numbers, users, and permissions are stored in PostgreSQL. The Cloudinary API secret is used only by the backend and must never be exposed through the frontend.
 
 Existing records that point to files in `doms/uploads` remain readable and are removed locally when permanently deleted. All new uploads use Cloudinary.
+
+Authentication is browser-session scoped: closing the browser removes the frontend credentials and requires a new login. Explicit logout also revokes previously issued tokens for that account on the server. JWTs expire after 30 minutes by default; configure `JWT_EXPIRATION` in milliseconds if a different short lifetime is required.
