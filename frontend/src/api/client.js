@@ -38,7 +38,7 @@ async function executeApi(path, options) {
     }
     if (!response.ok) {
       let message;
-      try { message = JSON.parse(text).message; } catch { message = text; }
+      try { const problem=JSON.parse(text); message=problem.message||problem.error; } catch { message = text; }
       throw new Error(message || "Request failed");
     }
     if (!text) return null;

@@ -230,6 +230,8 @@ function Stat({ label, value, sub, tone = "", icon: Icon }) {
 function Admin({ page }) {
   const [users, setUsers] = useState([]),
     [subs, setSubs] = useState([]),
+    [organizations, setOrganizations] = useState([]),
+    [availablePlans, setAvailablePlans] = useState([]),
     [form, setForm] = useState({
       fullName: "",
       email: "",
@@ -239,6 +241,7 @@ function Admin({ page }) {
       jobTitle: "",
       department: "",
       address: "",
+      orgId: "", planId: "", startDate: "", endDate: "",
     }),
     [edit, setEdit] = useState(null),
     [viewUser, setViewUser] = useState(null),
@@ -255,6 +258,8 @@ function Admin({ page }) {
   const load = () =>
     Promise.all([
       api("/admin/users").then(setUsers),
+      api("/admin/organizations").then(setOrganizations),
+      api("/admin/plans").then(setAvailablePlans),
       Promise.resolve([]).then(setSubs),
     ]).catch((e) => setMsg(e.message));
   useEffect(() => {
@@ -267,8 +272,8 @@ function Admin({ page }) {
         method: "POST",
         body: JSON.stringify(form),
       });
-      setForm({ fullName: "", email: "", password: "", role: "ROLE_USER", contactNumber: "", jobTitle: "", department: "", address: "" });
-      setMsg("User created with unlimited document uploads");
+      setForm({ fullName: "", email: "", password: "", role: "ROLE_USER", contactNumber: "", jobTitle: "", department: "", address: "", orgId:"", planId:"", startDate:"", endDate:"" });
+      setMsg("User and subscription created");
       load();
     } catch (x) {
       setMsg(x.message);
@@ -343,6 +348,10 @@ function Admin({ page }) {
             <label>Job title<input minLength="2" maxLength="100" value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} required /></label>
             <label>Department<input minLength="2" maxLength="100" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required /></label>
             <label>Address<textarea maxLength="250" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
+            <label>Organization ID<input type="text" required placeholder="Enter Organization ID" value={form.orgId} onChange={(e)=>setForm({...form,orgId:e.target.value})} /></label>
+            <label>Plan<select required value={form.planId} onChange={(e)=>setForm({...form,planId:e.target.value})}><option value="">Select plan</option>{availablePlans.map(p=><option key={p.id} value={p.id}>{p.name} · {(p.monthlyUploadLimitBytes/1024/1024/1024).toFixed(0)} GB/month</option>)}</select></label>
+            <label>Start date<input type="date" required value={form.startDate} onChange={(e)=>setForm({...form,startDate:e.target.value,endDate:form.endDate&&form.endDate<=e.target.value?"":form.endDate})}/></label>
+            <label>End date<input type="date" required min={form.startDate?new Date(new Date(form.startDate).getTime()+86400000).toISOString().slice(0,10):undefined} value={form.endDate} onChange={(e)=>setForm({...form,endDate:e.target.value})}/></label>
             <button className="primary">Create user</button>
             {msg && <p className="notice">{msg}</p>}
           </form>
@@ -534,9 +543,9 @@ function Dashboard({ profile, docs }) {
         <div>
           <span className="eyebrow">GOOD TO SEE YOU</span>
           <h1>{profile.fullName.split(" ")[0]}, your archive is in order.</h1>
-          <p>Upload, organize, search, and share documents without any quota.</p>
+          <p>Upload, organize, search, and share documents within your monthly plan.</p>
         </div>
-        <div className="usage"><span>Unlimited</span><small>DOCUMENT UPLOADS</small></div>
+        <div className="usage"><span>{profile.quota?.plan || "No plan"}</span><small>MONTHLY PLAN</small></div>
       </div>
       <div className="stats">
         <Stat icon={Files} label="DOCUMENTS" value={docs.length} sub="In your workspace" />
@@ -548,9 +557,9 @@ function Dashboard({ profile, docs }) {
         />
         <Stat
           icon={Upload}
-          label="UPLOAD ACCESS"
-          value="UNLIMITED"
-          sub="No subscription required"
+          label="REMAINING STORAGE"
+          value={profile.quota ? `${(profile.quota.remainingBytes/1024/1024/1024).toFixed(2)} GB` : "0 GB"}
+          sub={profile.quota ? `${(profile.quota.usedBytes/1024/1024/1024).toFixed(2)} GB used of ${(profile.quota.monthlyLimitBytes/1024/1024/1024).toFixed(0)} GB` : "A valid subscription is required"}
           tone="green"
         />
       </div>

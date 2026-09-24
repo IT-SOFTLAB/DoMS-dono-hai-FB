@@ -1,5 +1,5 @@
 export const plans = [
-  ["GOLD", 30, "₹499"],
-  ["PLATINUM", 50, "₹799"],
-  ["DIAMOND", 70, "₹999"],
+  ["SILVER", 5 * 1024 ** 3],
+  ["GOLD", 8 * 1024 ** 3],
+  ["DIAMOND", 15 * 1024 ** 3],
 ];

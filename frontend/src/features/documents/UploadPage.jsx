@@ -69,7 +69,7 @@ export default function UploadPage({ profile, refresh }) {
       <p className="form-intro">Add useful ownership, classification, and filing details for accurate retrieval.</p>
       <form className="form grid" onSubmit={submit}>
         <label className={`drop ${dragging ? "dragging" : ""}`} onDragOver={(event)=>{event.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={(event)=>{event.preventDefault();setDragging(false);selectFile(event.dataTransfer.files[0])}}>
-          <input type="file" required={!file} onChange={(event) => selectFile(event.target.files[0])} />
+          <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx,.csv,.txt,.pptx,.zip,application/pdf,image/*" required={!file} onChange={(event) => selectFile(event.target.files[0])} />
           <span className="living-folder" aria-hidden="true"><i className="folder-back"/><i className="paper paper-one"/><i className="paper paper-two"/><i className="paper paper-three"/><i className="folder-front"/></span>
           <span className="drop-copy"><FileUp/><b>{file ? file.name : "Drop a document here"}</b><span>or browse your device · Maximum 20 MB</span></span>
           {file && <span className="file-chip"><b>{file.name}</b><small>{(file.size/1024/1024).toFixed(2)} MB</small><button type="button" aria-label="Remove selected file" onClick={(event)=>{event.preventDefault();setFile(null);update("fileName","")}}><X/></button></span>}
@@ -84,11 +84,11 @@ export default function UploadPage({ profile, refresh }) {
         <h4 className="form-section wide">Filing information</h4>
         <label>Upload date<input type="date" value={new Date().toISOString().slice(0, 10)} disabled/><small>Recorded automatically when you upload.</small></label>
         {error && <div className="error wide">{error}</div>}
-        <div className="submit-row wide"><button className="primary" disabled={saving}><FileUp/>{saving ? "Uploading, please wait…" : "Save document"}</button><small>Unlimited uploads · a unique reference is stamped on save</small></div>
+        <div className="submit-row wide"><button className="primary" disabled={saving}><FileUp/>{saving ? "Uploading, please wait…" : "Save document"}</button><small>{profile.quota ? `${(profile.quota.remainingBytes/1024/1024/1024).toFixed(2)} GB remaining this period` : "A valid subscription is required"} · a unique reference is stamped on save</small></div>
       </form>
     </section>
     <aside className="tip">
-      <ShieldCheck/><b>Unlimited document uploads</b><span>Upload and organize files without a plan or quota.</span>
+      <ShieldCheck/><b>{profile.quota?.plan || "No active plan"}</b><span>{profile.quota ? `${(profile.quota.usedBytes/1024/1024/1024).toFixed(2)} GB used of ${(profile.quota.monthlyLimitBytes/1024/1024/1024).toFixed(0)} GB monthly` : "Contact an administrator to assign a subscription."}</span>
       <p>Categories and departments are available in search. Upload date is recorded automatically.</p>
       {result && <div className="code-result"><CheckCircle2/><small>DOCUMENT UPLOADED SUCCESSFULLY</small><strong>{result.documentCode}</strong><p>Uploaded {new Date(result.uploadedAt).toLocaleString()}</p><button type="button" onClick={async () => { await navigator.clipboard.writeText(result.documentCode); setCopied(true); setTimeout(() => setCopied(false), 1500); }}><Copy/> {copied ? "Copied" : "Copy unique code"}</button><button className="primary" onClick={() => setSharing(true)}><Share2/> Share</button></div>}
     </aside>
