@@ -1,0 +1,13 @@
+package com.doms.doms.controller;
+import com.doms.doms.dto.*;import com.doms.doms.entity.*;import com.doms.doms.repository.*;import lombok.RequiredArgsConstructor;import org.springframework.http.*;import org.springframework.security.core.context.SecurityContextHolder;import org.springframework.web.bind.annotation.*;import java.time.LocalDateTime;import java.util.*;
+@RestController @RequestMapping("/api/folders") @RequiredArgsConstructor
+public class FolderController{
+ private final FolderRepository folders;private final DocumentRepository documents;private final UserRepository users;
+ private User current(){return users.findByEmail(SecurityContextHolder.getContext().getAuthentication().getName()).orElseThrow();}
+ private Folder own(Long id){return folders.findByIdAndOwner(id,current()).orElseThrow(()->new IllegalArgumentException("Folder not found"));}
+ private FolderResponse dto(Folder f){return new FolderResponse(f.getId(),f.getName(),f.getParent()==null?null:f.getParent().getId(),f.getParent()==null?null:f.getParent().getName(),documents.countByFolderAndDeletedAtIsNull(f));}
+ @GetMapping public List<FolderResponse> list(){return folders.findByOwnerOrderByName(current()).stream().map(this::dto).toList();}
+ @PostMapping public ResponseEntity<FolderResponse> create(@RequestBody FolderRequest r){User u=current();String name=r.getName()==null?"":r.getName().trim();if(name.isEmpty())throw new IllegalArgumentException("Folder name is required");Folder parent=r.getParentId()==null?null:own(r.getParentId());if(folders.existsByOwnerAndParentAndNameIgnoreCase(u,parent,name))throw new IllegalArgumentException("A folder with this name already exists here");return ResponseEntity.status(HttpStatus.CREATED).body(dto(folders.save(Folder.builder().name(name).parent(parent).owner(u).createdAt(LocalDateTime.now()).build())));}
+ @PutMapping("/{id}") public FolderResponse rename(@PathVariable Long id,@RequestBody FolderRequest r){Folder f=own(id);if(r.getName()==null||r.getName().trim().isEmpty())throw new IllegalArgumentException("Folder name is required");f.setName(r.getName().trim());return dto(folders.save(f));}
+ @DeleteMapping("/{id}") public ResponseEntity<Void> delete(@PathVariable Long id){Folder f=own(id);if(documents.countByFolderAndDeletedAtIsNull(f)>0)throw new IllegalArgumentException("Move documents out of this folder before deleting it");if(folders.findByOwnerOrderByName(current()).stream().anyMatch(x->x.getParent()!=null&&x.getParent().getId().equals(id)))throw new IllegalArgumentException("Delete subfolders first");folders.delete(f);return ResponseEntity.noContent().build();}
+}

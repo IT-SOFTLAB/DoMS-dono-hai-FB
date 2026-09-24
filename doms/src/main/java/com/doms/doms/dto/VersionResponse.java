@@ -1,0 +1,1 @@
+package com.doms.doms.dto;import java.time.LocalDateTime;public record VersionResponse(Long id,Integer versionNumber,String fileName,Long fileSize,String createdBy,LocalDateTime createdAt,String changeNote){}

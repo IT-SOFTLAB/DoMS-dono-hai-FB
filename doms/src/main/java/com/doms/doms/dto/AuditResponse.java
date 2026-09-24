@@ -1,0 +1,1 @@
+package com.doms.doms.dto;import java.time.LocalDateTime;public record AuditResponse(Long id,String action,Long documentId,String documentCode,String documentName,String details,LocalDateTime createdAt){}
