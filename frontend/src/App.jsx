@@ -574,7 +574,7 @@ function UploadPage({ profile, refresh }) {
   const [f, setF] = useState(null),
     [m, setM] = useState({
       fileName: "",
-      fileType: "PDF",
+      fileType: "",
       category: "",
       department: "",
       documentDate: "",
@@ -644,6 +644,7 @@ function UploadPage({ profile, refresh }) {
               value={m.fileType}
               onChange={(e) => setM({ ...m, fileType: e.target.value })}
             >
+              <option value="" disabled>file type</option>
               {[
                 "PDF",
                 "DOCX",
@@ -1169,13 +1170,41 @@ function Modal({ close, children }) {
     </div>
   );
 }
+function HealthPage() {
+  const [status, setStatus] = useState("Checking backend health...");
+  useEffect(() => {
+    fetch(`${API}/health/api`)
+      .then((r) => r.json())
+      .then((d) => setStatus(`Backend Status: ${d.status} - ${d.message}`))
+      .catch((e) => setStatus(`Backend Error: ${e.message}`));
+  }, []);
+  return (
+    <div className="empty" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <Activity size={48} />
+      <h2>System Health</h2>
+      <p>{status}</p>
+    </div>
+  );
+}
+
 export default function App() {
   const [u, setU] = useState(readSession);
+  const [isHealth, setIsHealth] = useState(() => window.location.pathname === "/health" || window.location.hash === "#/health");
   useEffect(() => {
     const unauthorized = () => setU(null);
+    const checkRoute = () => setIsHealth(window.location.pathname === "/health" || window.location.hash === "#/health");
     window.addEventListener("doms:unauthorized", unauthorized);
-    return () => window.removeEventListener("doms:unauthorized", unauthorized);
+    window.addEventListener("popstate", checkRoute);
+    window.addEventListener("hashchange", checkRoute);
+    return () => {
+      window.removeEventListener("doms:unauthorized", unauthorized);
+      window.removeEventListener("popstate", checkRoute);
+      window.removeEventListener("hashchange", checkRoute);
+    };
   }, []);
+  
+  if (isHealth) return <HealthPage />;
+
   return <><GlobalLoader/>{u ? (
     <Shell
       user={u}

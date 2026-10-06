@@ -13,7 +13,7 @@ function detectFileType(file) {
 export default function UploadPage({ profile, refresh }) {
   const [file, setFile] = useState(null);
   const [metadata, setMetadata] = useState({
-    fileName: "", fileType: "PDF", category: "", department: "",
+    fileName: "", fileType: "", category: "", department: "",
     documentOwner: "", documentDate: "",
   });
   const [result, setResult] = useState(null);
@@ -76,7 +76,7 @@ export default function UploadPage({ profile, refresh }) {
         </label>
         <h4 className="form-section wide">Document identity</h4>
         <Field label="Document name" required value={metadata.fileName} onChange={(v) => update("fileName", v)} />
-        <label>File type<input value={metadata.fileType} readOnly /><small>Detected automatically from the selected file.</small></label>
+        <label>File type<input value={metadata.fileType} placeholder="file type" readOnly /><small>Detected automatically from the selected file.</small></label>
         <div><Select label="Category" required value={metadata.category} options={categories.map((item) => item.name)} placeholder="Select category" onChange={(v) => update("category", v)} /><button className="link-button" type="button" onClick={() => setQuickCreate("categories")}>+ Create category</button></div>
         <div><Select label="Department" required value={metadata.department} options={departments.map((item) => item.name)} placeholder="Select department" onChange={(v) => update("department", v)} /><button className="link-button" type="button" onClick={() => setQuickCreate("departments")}>+ Create department</button></div>
         <h4 className="form-section wide">Ownership and access</h4>
