@@ -7,9 +7,10 @@ The project has two sibling applications:
 
 ## Start
 
-1. Copy `doms/.env.example` to `doms/.env`, then configure PostgreSQL, JWT, and your Cloudinary cloud name, API key, and API secret.
-2. In `doms`, run `./mvnw spring-boot:run` (`mvnw.cmd spring-boot:run` on Windows).
-3. In `frontend`, run `npm install`, then `npm run dev`.
+1. Copy `doms/.env.example` to `doms/.env`, then configure PostgreSQL, JWT, SMTP, and your Cloudinary cloud name, API key, and API secret.
+2. Copy `frontend/.env.example` to `frontend/.env`, then configure `VITE_API_URL` if your backend is not running on the default local URL.
+3. In `doms`, run `./mvnw spring-boot:run` (`mvnw.cmd spring-boot:run` on Windows).
+4. In `frontend`, run `npm install`, then `npm run dev`.
 
 Frontend: `http://localhost:5173` · API: `http://localhost:8080/api`
 

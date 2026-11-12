@@ -11,6 +11,27 @@ CREATE TABLE IF NOT EXISTS plans (
 INSERT INTO plans(name,slug,monthly_upload_limit_bytes,active) VALUES
  ('Silver','silver',5368709120,TRUE),('Gold','gold',8589934592,TRUE),('Diamond','diamond',16106127360,TRUE)
 ON CONFLICT (slug) DO UPDATE SET name=EXCLUDED.name, monthly_upload_limit_bytes=EXCLUDED.monthly_upload_limit_bytes;
+
+CREATE TABLE IF NOT EXISTS users (
+ id BIGSERIAL PRIMARY KEY,
+ full_name VARCHAR(255) NOT NULL,
+ email VARCHAR(255) NOT NULL,
+ contact_number VARCHAR(255),
+ job_title VARCHAR(255),
+ department VARCHAR(255),
+ address VARCHAR(255),
+ password VARCHAR(255) NOT NULL,
+ role VARCHAR(255) NOT NULL,
+ enabled BOOLEAN NOT NULL,
+ created_at TIMESTAMP NOT NULL,
+ document_limit INTEGER NOT NULL,
+ documents_used INTEGER NOT NULL,
+ current_plan VARCHAR(255) NOT NULL,
+ token_version BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_users_email ON users(email);
+
 ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id BIGINT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_id BIGINT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_start_date DATE;
