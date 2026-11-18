@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   Upload,
@@ -27,11 +27,19 @@ import {
   Files,
   Layers3,
   Crown,
+  LoaderCircle,
+  Sun,
+  Moon,
+  UserPlus,
+  ArrowRight,
+  FolderOpen,
+  Sparkles,
 } from "lucide-react";
 import "./styles.css";
 import { api, API, clearSession, readSession, saveSession } from "./api/client";
 import DocumentUploadPage from "./features/documents/UploadPage";
 import DocumentSearchPage from "./features/documents/SearchPage";
+import FoldersPage from "./features/documents/FoldersPage";
 import LookupManagement from "./features/lookups/LookupManagement";
 import SharedWithMe from "./features/sharing/SharedWithMe";
 import NotesPage from "./features/documents/NotesPage";
@@ -69,10 +77,10 @@ function Login({ onLogin }) {
   return (
     <div className="login">
       <section className="brand-panel">
-        <div className="logo">
-          <FileText /> DOMS
+        <div className="logo login-brand">
+          <span className="login-brand-mark"><FileText /></span> DOMS
         </div>
-        <div>
+        <div className="login-brand-copy">
           <span className="eyebrow">DOCUMENT INTELLIGENCE</span>
           <h1>
             Your records.
@@ -83,39 +91,53 @@ function Login({ onLogin }) {
             A secure workspace to catalogue, find, and control every important
             document.
           </p>
+          <div className="login-points">
+            <span><ShieldCheck /> Secure document access</span>
+            <span><Search /> Find records in seconds</span>
+            <span><Files /> One organized workspace</span>
+          </div>
         </div>
-        <small>ITSOFTLAB360</small>
+        <div className="login-art" aria-hidden="true">
+          <div className="login-art-orbit orbit-one" /><div className="login-art-orbit orbit-two" />
+          <div className="login-art-card"><div className="login-art-card-top"><span><FileText /></span><i /></div><b /><b /><b /><div className="login-art-chip"><ShieldCheck /> Encrypted</div></div>
+          <div className="login-art-float"><Files /><span><strong>2,480+</strong><small>documents organized</small></span></div>
+        </div>
+        <small className="login-footer">© {new Date().getFullYear()} ITSOFTLAB360 <span>·</span> Built for your work</small>
       </section>
       <section className="login-form">
-        <form onSubmit={submit} autoComplete="off">
-          <div className="mark">
-            <ShieldCheck />
+        <form onSubmit={submit} autoComplete="on">
+          <div className="login-form-heading">
+            <div className="mark"><ShieldCheck /></div>
+            <span className="login-secure"><span /> Secure sign in</span>
           </div>
           <h2>Welcome back</h2>
-          <p>Sign in to your document workspace</p>
+          <p>Sign in to continue to your document workspace.</p>
           <label>
             Email address
             <input
               type="email"
+              placeholder="you@company.com"
               value={e}
               onChange={(x) => setE(x.target.value)}
               required
-              autoComplete="off"
+              autoComplete="email"
             />
           </label>
           <label>
             Password
             <input
               type="password"
+              placeholder="Enter your password"
               value={p}
               onChange={(x) => setP(x.target.value)}
               required
-              autoComplete="new-password"
+              autoComplete="current-password"
             />
           </label>
           <button type="button" className="forgot-link" onClick={() => setForgot(true)}>Forgot password?</button>
           {err && <div className="error">{err}</div>}
-          <button className="primary" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</button>
+          <button className="primary login-submit" disabled={busy}>{busy ? <><LoaderCircle className="login-spinner" /> Signing in…</> : <>Sign in <ChevronRight /></>}</button>
+          <div className="login-assurance"><ShieldCheck /> Your information is protected with secure access.</div>
         </form>
       </section>
       {forgot && <Modal close={() => setForgot(false)}><PasswordOtpForm initialEmail={e} onDone={() => setForgot(false)} /></Modal>}
@@ -133,19 +155,19 @@ function Shell({ user, onLogout }) {
         ["dashboard", LayoutDashboard, "Dashboard"],
         ["upload", Upload, "Upload document"],
         ["search", Search, "Search documents"],
-        // ["notes", StickyNote, "Document notes"],
+        ["folders", Files, "Folders"],
         ["audit", Activity, "Audit trail"],
-        ["recycle", ArchiveRestore, "Recycle bin"],
-        ["categories", Tags, "Categories"],
-        ["departments", Building2, "Departments"],
         // ["shared", Share2, "Shared With Me"],
         ["profile", UserRound, "Manage profile"],
+        ["recycle", ArchiveRestore, "Recycle bin"],
       ];
   const navGroups = admin
     ? [["Admin", items]]
-    : [["Workspace", items.slice(0, 4)], ["Insights", items.slice(4, 6)], ["Organize", items.slice(6, 9)], ["Account", items.slice(9)]];
+    : [["Workspace", items.slice(0, 4)], ["Insights", items.slice(4, 5)], ["Account", items.slice(5)]];
   const [page, setPage] = useState(() => pageFromRoute(admin, items)),
-    [open, setOpen] = useState(false);
+    [open, setOpen] = useState(false),
+    [theme, setTheme] = useState(() => localStorage.getItem("doms_theme") || "dark");
+  useEffect(() => { localStorage.setItem("doms_theme", theme); }, [theme]);
   const navigate = (nextPage, replace = false) => {
     if (!items.some(([id]) => id === nextPage)) return;
     const path = routeFor(admin, nextPage);
@@ -162,7 +184,7 @@ function Shell({ user, onLogout }) {
     return () => { window.removeEventListener("popstate", onRouteChange); window.removeEventListener("hashchange", onRouteChange); };
   }, [admin]);
   return (
-    <div className="app">
+    <div className={`app theme-${theme}`}>
       <aside className={open ? "open" : ""}>
         <div className="logo">
           <span className="logo-mark"><FileText /></span> DOMS{" "}
@@ -189,7 +211,7 @@ function Shell({ user, onLogout }) {
           <div className="avatar">{user.fullName?.[0]}</div>
           <div>
             <b>{user.fullName}</b>
-            <span>{admin ? "Super Admin" : "Member"}</span>
+            <span className={admin ? "account-role admin-role" : "account-role"}>{admin ? "System Administrator" : "Member"}</span>
           </div>
           {!admin && <ChevronRight className="account-chevron" />}
         </div>
@@ -204,12 +226,17 @@ function Shell({ user, onLogout }) {
             <Menu />
           </button>
           <div>
-            <span className="eyebrow">
+            <span className="eyebrow header-context-label">
               {admin ? "ADMIN CONSOLE" : "MY WORKSPACE"}
             </span>
             <h2>{items.find((x) => x[0] === page)?.[2]}</h2>
           </div>
-          <div className="header-user"><span className="avatar">{user.fullName?.[0]}</span>{user.fullName}</div>
+          <div className="header-actions">
+            <button type="button" className="theme-toggle" onClick={() => setTheme(theme === "dark" ? "light" : "dark")} aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}>
+              {theme === "dark" ? <Sun /> : <Moon />}<span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
+            </button>
+            <div className="header-user" title={user.fullName} aria-label={`Signed in as ${user.fullName}`}><span className="avatar">{user.fullName?.[0]}</span></div>
+          </div>
         </header>
         <div className="content page-enter">
           {admin ? <Admin page={page} /> : <UserPages page={page} />}
@@ -244,6 +271,7 @@ function Admin({ page }) {
       orgId: "", planId: "", startDate: "", endDate: "",
     }),
     [edit, setEdit] = useState(null),
+    [createOpen, setCreateOpen] = useState(false),
     [viewUser, setViewUser] = useState(null),
     [msg, setMsg] = useState(""),
     [userSearch, setUserSearch] = useState(""),
@@ -273,7 +301,8 @@ function Admin({ page }) {
         body: JSON.stringify(form),
       });
       setForm({ fullName: "", email: "", password: "", role: "ROLE_USER", contactNumber: "", jobTitle: "", department: "", address: "", orgId:"", planId:"", startDate:"", endDate:"" });
-      setMsg("User and subscription created");
+      setMsg("User created successfully");
+      setCreateOpen(false);
       load();
     } catch (x) {
       setMsg(x.message);
@@ -314,48 +343,12 @@ function Admin({ page }) {
     );
   if (page === "users")
     return (
-      <div className="split">
-        <Panel title="Create a new user">
-          <form className="form" onSubmit={create}>
-            <label>
-              Full name
-              <input
-                value={form.fullName}
-                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Email
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              Temporary password
-              <input
-                type="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                minLength="8"
-                required
-              />
-            </label>
-            <label>Contact number<input inputMode="numeric" pattern="[0-9]{10}" maxLength="10" title="Enter exactly 10 digits" value={form.contactNumber} onChange={(e) => setForm({ ...form, contactNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })} required /></label>
-            <label>Job title<input minLength="2" maxLength="100" value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} required /></label>
-            <label>Department<input minLength="2" maxLength="100" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required /></label>
-            <label>Address<textarea maxLength="250" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
-            <label>Organization ID<input type="text" required placeholder="Enter Organization ID" value={form.orgId} onChange={(e)=>setForm({...form,orgId:e.target.value})} /></label>
-            <label>Plan<select required value={form.planId} onChange={(e)=>setForm({...form,planId:e.target.value})}><option value="">Select plan</option>{availablePlans.map(p=><option key={p.id} value={p.id}>{p.name} · {(p.monthlyUploadLimitBytes/1024/1024/1024).toFixed(0)} GB/month</option>)}</select></label>
-            <label>Start date<input type="date" required value={form.startDate} onChange={(e)=>setForm({...form,startDate:e.target.value,endDate:form.endDate&&form.endDate<=e.target.value?"":form.endDate})}/></label>
-            <label>End date<input type="date" required min={form.startDate?new Date(new Date(form.startDate).getTime()+86400000).toISOString().slice(0,10):undefined} value={form.endDate} onChange={(e)=>setForm({...form,endDate:e.target.value})}/></label>
-            <button className="primary">Create user</button>
-            {msg && <p className="notice">{msg}</p>}
-          </form>
-        </Panel>
+      <div className="users-page">
+        <div className="users-toolbar">
+          <div><span className="eyebrow">USER DIRECTORY</span><h3>Manage users</h3><p>Create accounts and manage workspace access.</p></div>
+          <button type="button" className="primary new-user-button" onClick={() => { setMsg(""); setCreateOpen(true); }}><UserPlus /> New user</button>
+        </div>
+        {msg && <div className="notice users-notice" role="status">{msg}</div>}
         <Panel title={`All users · ${users.length}`}>
           <div className="table-tools"><input type="search" placeholder="Search by name, email, contact, or department" value={userSearch} onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }} /></div>
           <div className="user-list">
@@ -368,23 +361,47 @@ function Admin({ page }) {
                     {u.email} · {u.documentsUsed} documents · unlimited uploads
                   </span>
                 </div>
-                <button title="View complete details" aria-label={`View ${u.fullName}`} onClick={() => setViewUser(u)}><Eye /></button>
-                <button onClick={() => setEdit({ ...u })}>Edit</button>
-                {u.role !== "ROLE_ADMIN" && (
-                  <button className="danger" onClick={() => remove(u.id)}>
-                    <Trash2 />
-                  </button>
-                )}
+                <div className="user-row-actions">
+                  <button title="View complete details" aria-label={`View ${u.fullName}`} onClick={() => setViewUser(u)}><Eye /></button>
+                  <button onClick={() => setEdit({ ...u })}>Edit</button>
+                  {u.role !== "ROLE_ADMIN" && (
+                    <button className="danger" onClick={() => remove(u.id)}>
+                      <Trash2 />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
           <Pagination page={userPage} total={filteredUsers.length} setPage={setUserPage} />
         </Panel>
+        {createOpen && <Modal className="create-user-modal" close={() => setCreateOpen(false)}>
+          <div className="create-user-dialog">
+            <span className="eyebrow">USER ACCOUNT</span>
+            <h3>New user details</h3>
+            <p className="form-intro">Enter the new member’s information and workspace plan.</p>
+            <form className="form grid create-user-form" onSubmit={create}>
+              <label>Full name<input autoFocus value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required /></label>
+              <label>Email<input type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required /></label>
+              <label>Temporary password<input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength="8" required /></label>
+              <label>Contact number<input inputMode="numeric" pattern="[0-9]{10}" maxLength="10" title="Enter exactly 10 digits" value={form.contactNumber} onChange={(e) => setForm({ ...form, contactNumber: e.target.value.replace(/\D/g, "").slice(0, 10) })} required /></label>
+              <label>Job title<input minLength="2" maxLength="100" value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} required /></label>
+              <label>Department<input minLength="2" maxLength="100" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} required /></label>
+              <label className="wide">Address<textarea maxLength="250" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
+              <label>Organization ID<input type="text" required placeholder="Enter Organization ID" value={form.orgId} onChange={(e) => setForm({ ...form, orgId: e.target.value })} /></label>
+              <label>Plan<select required value={form.planId} onChange={(e) => setForm({ ...form, planId: e.target.value })}><option value="">Select plan</option>{availablePlans.map((p) => <option key={p.id} value={p.id}>{p.name} · {(p.monthlyUploadLimitBytes / 1024 / 1024 / 1024).toFixed(0)} GB/month</option>)}</select></label>
+              <label>Start date<input type="date" required value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value, endDate: form.endDate && form.endDate <= e.target.value ? "" : form.endDate })} /></label>
+              <label>End date<input type="date" required min={form.startDate ? new Date(new Date(form.startDate).getTime() + 86400000).toISOString().slice(0, 10) : undefined} value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} /></label>
+              {msg && <div className="error wide" role="alert">{msg}</div>}
+              <div className="create-user-actions wide"><button type="button" className="secondary-button" onClick={() => setCreateOpen(false)}>Cancel</button><button className="primary"><UserPlus /> Create user</button></div>
+            </form>
+          </div>
+        </Modal>}
         {edit && (
-          <Modal close={() => setEdit(null)}>
+          <Modal className="edit-user-modal" close={() => setEdit(null)}>
             <h3>Edit user</h3>
             <form
-              className="form"
+              className="form grid edit-user-form"
               onSubmit={(e) => {
                 e.preventDefault();
                 save(edit);
@@ -427,7 +444,7 @@ function Admin({ page }) {
             </form>
           </Modal>
         )}
-        {viewUser && <Modal close={() => setViewUser(null)}><h3>User details</h3><div className="user-details"><Detail label="Full name" value={viewUser.fullName}/><Detail label="Email" value={viewUser.email}/><Detail label="Contact number" value={viewUser.contactNumber}/><Detail label="Job title" value={viewUser.jobTitle}/><Detail label="Department" value={viewUser.department}/><Detail label="Address" value={viewUser.address}/><Detail label="Upload access" value="Unlimited"/><Detail label="Documents uploaded" value={viewUser.documentsUsed}/><Detail label="Role" value={viewUser.role === "ROLE_ADMIN" ? "Administrator" : "User"}/><Detail label="Status" value={viewUser.enabled ? "Active" : "Deactivated"}/></div><button className="primary" onClick={() => { setEdit({ ...viewUser }); setViewUser(null); }}>Edit user</button></Modal>}
+        {viewUser && <Modal className="user-details-modal" close={() => setViewUser(null)}><div className="user-details-dialog"><h3>User details</h3><div className="user-details"><Detail label="Full name" value={viewUser.fullName}/><Detail label="Email" value={viewUser.email}/><Detail label="Contact number" value={viewUser.contactNumber}/><Detail label="Job title" value={viewUser.jobTitle}/><Detail label="Department" value={viewUser.department}/><Detail label="Address" value={viewUser.address}/><Detail label="Upload access" value="Unlimited"/><Detail label="Documents uploaded" value={viewUser.documentsUsed}/><Detail label="Role" value={viewUser.role === "ROLE_ADMIN" ? "Administrator" : "User"}/><Detail label="Status" value={viewUser.enabled ? "Active" : "Deactivated"}/></div><button className="primary" onClick={() => { setEdit({ ...viewUser }); setViewUser(null); }}>Edit user</button></div></Modal>}
       </div>
     );
   return (
@@ -527,6 +544,7 @@ function UserPages({ page }) {
     );
   if (page === "upload") return <DocumentUploadPage profile={profile} refresh={load} />;
   if (page === "search") return <DocumentSearchPage />;
+  if (page === "folders") return <FoldersPage />;
   if (page === "notes") return <NotesPage />;
   if (page === "audit") return <AuditPage />;
   if (page === "recycle") return <RecycleBin />;
@@ -537,13 +555,19 @@ function UserPages({ page }) {
 }
 function Dashboard({ profile, docs }) {
   const recent = [...docs].sort((a,b) => new Date(b.uploadedAt || 0) - new Date(a.uploadedAt || 0)).slice(0, 5);
+  const classified = docs.filter((doc) => doc.category && doc.department).length;
+  const coverage = docs.length ? Math.round((classified / docs.length) * 100) : 0;
+  const topCategory = Object.entries(docs.reduce((counts, doc) => {
+    if (doc.category) counts[doc.category] = (counts[doc.category] || 0) + 1;
+    return counts;
+  }, {})).sort((a, b) => b[1] - a[1])[0]?.[0];
   return (
     <>
       <div className="welcome">
         <div>
           <span className="eyebrow">GOOD TO SEE YOU</span>
           <h1>{profile.fullName.split(" ")[0]}, your archive is in order.</h1>
-          <p>Upload, organize, search, and share documents within your monthly plan.</p>
+          <p>Keep important records organized, easy to find, and ready for your team.</p>
         </div>
         <div className="usage"><span>{profile.quota?.plan || "No plan"}</span><small>MONTHLY PLAN</small></div>
       </div>
@@ -563,8 +587,29 @@ function Dashboard({ profile, docs }) {
           tone="green"
         />
       </div>
+      <section className="archive-pulse">
+        <div className="archive-pulse-copy">
+          <span className="eyebrow"><Sparkles /> WORKSPACE INSIGHT</span>
+          <h3>Archive pulse</h3>
+          <p>{docs.length ? "A live snapshot of how easy your archive is to browse." : "Your workspace is ready. Set up its filing structure and explore the archive tools."}</p>
+          <div className="archive-pulse-metrics">
+            <div><strong>{docs.length ? `${coverage}%` : "Ready"}</strong><span>Filing coverage</span></div>
+            <div><strong>{topCategory || "—"}</strong><span>{topCategory ? "Most used category" : "Top category"}</span></div>
+          </div>
+          <div className="archive-pulse-actions">
+            <button type="button" className="primary" onClick={() => { window.location.hash = "#/user/folders"; }}>Open folders <ArrowRight /></button>
+            <button type="button" className="pulse-secondary" onClick={() => { window.location.hash = "#/user/categories"; }}>Set up categories</button>
+          </div>
+        </div>
+        <div className="archive-pulse-art" aria-hidden="true">
+          <div className="pulse-orbit pulse-orbit-one" /><div className="pulse-orbit pulse-orbit-two" />
+          <div className="pulse-core"><FolderOpen /></div>
+          <span className="pulse-node pulse-node-one"><FileText /></span><span className="pulse-node pulse-node-two"><Tags /></span><span className="pulse-node pulse-node-three"><ShieldCheck /></span>
+          <span className="pulse-status"><i /> {docs.length ? `${docs.length} records in view` : "Workspace ready"}</span>
+        </div>
+      </section>
       <Panel title="Recent document uploads">
-        {recent.length ? <div className="recent-documents">{recent.map(doc => <article key={doc.id}><span className="file-icon">{doc.fileType}</span><div><b>{doc.fileName}</b><small>{doc.category || "Uncategorized"} · {doc.department || "No department"}</small></div><time>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : ""}</time></article>)}</div> : <p className="form-intro">No documents uploaded yet. Use Upload document to catalogue your first file.</p>}
+        {recent.length ? <div className="recent-documents">{recent.map(doc => <article key={doc.id}><span className="file-icon">{doc.fileType}</span><div><b>{doc.fileName}</b><small>{doc.category || "Uncategorized"} · {doc.department || "No department"}</small></div><time>{doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleString() : ""}</time></article>)}</div> : <div className="dashboard-empty"><span className="dashboard-empty-icon"><FolderOpen /></span><div><b>Your archive is ready for its first record</b><p className="form-intro">Use folders and categories to build a filing system that fits your team.</p></div><button type="button" className="pulse-secondary" onClick={() => { window.location.hash = "#/user/folders"; }}>Explore folders <ArrowRight /></button></div>}
       </Panel>
     </>
   );
@@ -1080,11 +1125,13 @@ function SearchPageV2() {
                 <Download />
               </a>
               <button
-                className="delete-doc"
+                className="delete-doc action-labeled"
                 title="Delete document"
+                aria-label={`Move ${d.fileName || "document"} to recycle bin`}
                 onClick={() => remove(d.id)}
               >
                 <Trash2 />
+                <span>Delete</span>
               </button>
             </div>
           </div>
@@ -1158,10 +1205,25 @@ function Empty({ text }) {
     </div>
   );
 }
-function Modal({ close, children }) {
+function Modal({ close, children, className = "" }) {
+  const dialogRef = useRef(null);
+  useEffect(() => {
+    const previous = document.activeElement;
+    dialogRef.current?.focus();
+    return () => previous?.focus?.();
+  }, []);
+  function handleKeyDown(event) {
+    if (event.key === "Escape") { event.stopPropagation(); close(); return; }
+    if (event.key !== "Tab") return;
+    const controls = [...(dialogRef.current?.querySelectorAll('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])') || [])];
+    if (!controls.length) { event.preventDefault(); return; }
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
   return (
-    <div className="modal" onMouseDown={close}>
-      <div onMouseDown={(e) => e.stopPropagation()}>
+    <div className={`modal ${className}`} role="presentation" tabIndex="-1" onKeyDown={handleKeyDown} onMouseDown={close}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Dialog" tabIndex="-1" onMouseDown={(e) => e.stopPropagation()}>
         <button className="close" onClick={close}>
           <X />
         </button>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { FileText, Folder, FolderPlus, MoveRight, RefreshCw, Trash2 } from "lucide-react";
+import { FileText, Folder, FolderPlus, MoveRight, RefreshCw, Trash2, Files } from "lucide-react";
 import { api } from "../../api/client";
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
@@ -68,11 +68,13 @@ export default function FoldersPage() {
     } catch (error) { setMessage(error.message); }
   }
 
-  return <div className="folder-layout">
+  return <div className="folder-workspace">
+    <div className="folder-page-heading"><div><span className="folder-kicker">DOCUMENT LIBRARY</span><h3>Folders</h3><p>Keep your files organized and easy to find.</p></div><span className="folder-total"><Folder /> {folders.length} folders</span></div>
+    <div className="folder-layout">
     <aside className="folder-panel">
-      <h3><Folder /> Folders</h3>
+      <h3><Folder /> Browse library</h3>
       <button type="button" className={selected === null ? "active" : ""} onClick={() => setSelected(null)}>
-        My Documents <span>{docs.filter((doc) => doc?.folderId == null).length}</span>
+        <Files /> My Documents <span>{docs.filter((doc) => doc?.folderId == null).length}</span>
       </button>
       {folders.map((folder) => <div className="folder-row" key={folder.id} style={{ paddingLeft: folder.parentId ? 18 : 0 }}>
         <button type="button" className={sameId(selected, folder.id) ? "active" : ""} onClick={() => setSelected(folder.id)}>
@@ -90,7 +92,7 @@ export default function FoldersPage() {
       </form>
     </aside>
     <section>
-      <div className="folder-title"><div><h3>{selectedFolder?.name || (selected === null ? "My Documents" : "Folder")}</h3><p>{visible.length} document{visible.length === 1 ? "" : "s"}</p></div></div>
+      <div className="folder-title"><div><span className="folder-kicker">CURRENT LOCATION</span><h3>{selectedFolder?.name || (selected === null ? "My Documents" : "Folder")}</h3><p>{visible.length} document{visible.length === 1 ? "" : "s"} in this location</p></div><Folder /></div>
       {message && <div className="error page-message"><span>{message}</span><button type="button" onClick={load}><RefreshCw /> Retry</button></div>}
       <div className="folder-docs">
         {visible.map((doc) => <article key={doc.id}>
@@ -98,9 +100,9 @@ export default function FoldersPage() {
           <div><b>{doc.fileName || "Untitled document"}</b>{doc.documentCode && <code>{doc.documentCode}</code>}</div>
           <label><MoveRight /> Move to<select value={doc.folderId ?? ""} onChange={(event) => move(doc, event.target.value)}><option value="">My Documents</option>{folders.map((folder) => <option value={folder.id} key={folder.id}>{folder.name}</option>)}</select></label>
         </article>)}
-        {!loading && !visible.length && <div className="empty"><Folder /><p>This folder is ready for its first document.</p></div>}
+        {!loading && !visible.length && <div className="empty"><Folder /><p>This folder is ready for its first document.</p><span>Documents you move here will appear in this list.</span></div>}
         {loading && <div className="page-loading"><RefreshCw /> Loading folders…</div>}
       </div>
     </section>
-  </div>;
+    </div></div>;
 }

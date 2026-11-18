@@ -81,7 +81,7 @@ public class GlobalExceptionHandler {
 
         ApiResponse response = new ApiResponse(
                 false,
-                "Request failed. Please contact your administrator."
+                "We couldn't complete that request. Please try again in a moment."
         );
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);

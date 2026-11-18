@@ -18,7 +18,7 @@ export function PreviewDialog({ document, close }) {
         setUrl(objectUrl);
       })
       .catch(() => {
-        setError("Unable to preview this document. Please try downloading the document or contact your administrator.");
+        setError("Preview is unavailable for this document. Try downloading it instead.");
       })
       .finally(() => setLoading(false));
     return () => objectUrl && URL.revokeObjectURL(objectUrl);

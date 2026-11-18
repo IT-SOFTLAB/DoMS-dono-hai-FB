@@ -17,6 +17,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // Find user by email (used for login)
     Optional<User> findByEmail(String email);
 
+    // Email addresses are case-insensitive for sign-in.
+    Optional<User> findByEmailIgnoreCase(String email);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select u from User u where u.email = :email")
     Optional<User> findByEmailForUpdate(String email);

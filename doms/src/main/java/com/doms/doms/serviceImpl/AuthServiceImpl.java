@@ -62,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         // Fetch user
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmailIgnoreCase(request.getEmail().trim())
                 .orElseThrow(() -> new RuntimeException("User not found."));
 
         // Generate JWT Token

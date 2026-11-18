@@ -8,13 +8,19 @@ export default function LookupManagement({ type, canManage = false }) {
   const [form, setForm] = useState({ name: "", description: "" });
   const [editing, setEditing] = useState(null);
   const [message, setMessage] = useState("");
-  const load = () => api(`/${type}`).then(setItems).catch((error) => setMessage(error.message));
+  const [loading, setLoading] = useState(true);
+  async function load() {
+    setLoading(true);
+    try { setItems(await api(`/${type}`)); setMessage(""); }
+    catch (error) { setMessage(error.message); }
+    finally { setLoading(false); }
+  }
   useEffect(() => { load(); }, [type]);
   async function save(event) {
     event.preventDefault();
     try {
       await api(`/${type}${editing ? `/${editing}` : ""}`, { method: editing ? "PUT" : "POST", body: JSON.stringify(form) });
-      setForm({ name: "", description: "" }); setEditing(null); setMessage(`${singular} saved`); await load();
+      setForm({ name: "", description: "" }); setEditing(null); await load(); setMessage(`${singular} saved`);
     } catch (error) { setMessage(error.message); }
   }
   async function remove(item) {
@@ -28,6 +34,6 @@ export default function LookupManagement({ type, canManage = false }) {
       <label>Description<textarea maxLength="500" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}/></label>
       <button className="primary">{editing ? "Save changes" : `Create ${singular}`}</button>{editing && <button type="button" onClick={() => { setEditing(null); setForm({ name: "", description: "" }); }}>Cancel</button>}
     </form></section>}
-    <section className="panel"><h3>{type === "categories" ? "Categories" : "Departments"}</h3>{message && <p className="notice">{message}</p>}<div className="table-wrap"><table><thead><tr><th>Name</th><th>Description</th>{canManage && <th>Actions</th>}</tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><b>{item.name}</b></td><td>{item.description || "—"}</td>{canManage && <td><div className="actions"><button title="Edit" onClick={() => { setEditing(item.id); setForm({ name: item.name, description: item.description || "" }); }}><Pencil/></button><button className="danger" title="Delete" onClick={() => remove(item)}><Trash2/></button></div></td>}</tr>)}</tbody></table>{!items.length && <p className="empty">No {type} have been created.</p>}</div></section>
+    <section className="panel"><h3>{type === "categories" ? "Categories" : "Departments"}</h3>{message && <div className="lookup-page-error" role="status"><span>{message}</span><button type="button" onClick={load}>Retry</button></div>}{loading ? <p className="form-intro">Loading {type}…</p> : <div className="table-wrap"><table><thead><tr><th>Name</th><th>Description</th>{canManage && <th>Actions</th>}</tr></thead><tbody>{items.map((item) => <tr key={item.id}><td><b>{item.name}</b></td><td>{item.description || "—"}</td>{canManage && <td><div className="actions lookup-actions"><button type="button" title="Edit category" aria-label={`Edit ${singular.toLowerCase()} ${item.name}`} onClick={() => { setEditing(item.id); setForm({ name: item.name, description: item.description || "" }); }}><Pencil/><span>Edit</span></button><button type="button" className="danger lookup-delete" title={`Delete ${singular.toLowerCase()}`} aria-label={`Delete ${singular.toLowerCase()} ${item.name}`} onClick={() => remove(item)}><Trash2/><span>Delete</span></button></div></td>}</tr>)}</tbody></table>{!items.length && <p className="empty">No {type} have been created yet. Create one to use it while filing a document.</p>}</div>}</section>
   </div>;
 }
