@@ -92,7 +92,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "http://127.0.0.1:*","https://doms-check.netlify.app/","https://doms-check.netlify.app"
-                ,"https://doms-final-dono.netlify.app/","http://localhost:5173/","https://doms.itsoftlab360.com"
+                ,"https://doms-final-dono.netlify.app/","http://localhost:5173","https://doms.itsoftlab360.com","http://localhost:5173/"
         ));
         //
         configuration.setAllowedMethods(List.of(

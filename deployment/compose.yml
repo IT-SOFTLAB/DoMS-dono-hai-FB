@@ -1,0 +1,52 @@
+name: doms
+
+services:
+  backend:
+    image: doms-backend:local
+    build:
+      context: ../doms
+      dockerfile: Dockerfile
+    env_file:
+      - ../doms/.env
+    environment:
+      SERVER_PORT: "8080"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - http://127.0.0.1:8080/health/api
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+
+  frontend:
+    image: doms-frontend:local
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${DOMS_API_URL:-http://localhost:8080/api}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - http://127.0.0.1:3000/health.json
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

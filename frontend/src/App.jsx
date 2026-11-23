@@ -1233,28 +1233,19 @@ function Modal({ close, children, className = "" }) {
   );
 }
 function HealthPage() {
-  const [status, setStatus] = useState("Checking backend health...");
-  useEffect(() => {
-    fetch(`${API}/health/api`)
-      .then((r) => r.json())
-      .then((d) => setStatus(`Backend Status: ${d.status} - ${d.message}`))
-      .catch((e) => setStatus(`Backend Error: ${e.message}`));
-  }, []);
-  return (
-    <div className="empty" style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <Activity size={48} />
-      <h2>System Health</h2>
-      <p>{status}</p>
-    </div>
-  );
+  const response = {
+    status: "UP",
+    message: "Frontend is serving traffic.",
+  };
+  return <pre>{JSON.stringify(response, null, 2)}</pre>;
 }
 
 export default function App() {
   const [u, setU] = useState(readSession);
-  const [isHealth, setIsHealth] = useState(() => window.location.pathname === "/health" || window.location.hash === "#/health");
+  const [isHealth, setIsHealth] = useState(() => ["/health", "/health/api"].includes(window.location.pathname) || window.location.hash === "#/health");
   useEffect(() => {
     const unauthorized = () => setU(null);
-    const checkRoute = () => setIsHealth(window.location.pathname === "/health" || window.location.hash === "#/health");
+    const checkRoute = () => setIsHealth(["/health", "/health/api"].includes(window.location.pathname) || window.location.hash === "#/health");
     window.addEventListener("doms:unauthorized", unauthorized);
     window.addEventListener("popstate", checkRoute);
     window.addEventListener("hashchange", checkRoute);
